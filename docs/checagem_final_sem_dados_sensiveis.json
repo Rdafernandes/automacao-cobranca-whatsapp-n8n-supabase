@@ -1,0 +1,39 @@
+{
+  "status": "revisao_local_concluida",
+  "data_revisao": "2026-06-01",
+  "escopo_revisado": [
+    "README.md",
+    ".gitignore",
+    "docs/",
+    "assets/",
+    "workflows/sanitizados/",
+    "supabase/",
+    "samples/"
+  ],
+  "arquivos_excluidos_do_escopo_publico": [
+    "MANUAL_AUTOMACAO_COBRANCA_WHATSAPP_*_TECNICO.md",
+    "[COBRANCA] 01_GATEWAY_WHAPI.json",
+    "[COBRANCA] 02_PROCESSAR_MENSAGEM.json",
+    "[COBRANCA] 03_NOTIFICAR_EQUIPE_ENTRADAS.json",
+    "[COBRANCA] 04_ENVIAR_COBRANCA_CLIENTES.json"
+  ],
+  "checks_executados": {
+    "workflows_sanitizados_active_false": true,
+    "workflows_sanitizados_sem_credenciais_n8n": true,
+    "workflows_sanitizados_sem_ids_reais_conhecidos": true,
+    "workflows_sanitizados_sem_mojibake": true,
+    "workflows_sanitizados_sem_pinData": true,
+    "workflows_sanitizados_conexoes_validas": true,
+    "samples_json_validos": true,
+    "links_markdown_validos": true,
+    "material_publico_sem_ids_reais_conhecidos": true,
+    "gitignore_bloqueia_originais_locais": true,
+    "supabase_demo_com_view_diagnostico_fila": true
+  },
+  "observacoes": [
+    "Nomes de variáveis de ambiente aparecem apenas na documentação dos workflows, sem valores reais.",
+    "Telefones 5511999990001, 5511999990002 e 5511999990003 são fictícios e usados em seeds/samples.",
+    "O schema Supabase foi revisado estruturalmente, mas não executado localmente porque psql não está instalado no ambiente."
+  ],
+  "resultado": "material_publico_pronto_para_upload_manual_com_atencao_para_nao_enviar_arquivos_originais"
+}

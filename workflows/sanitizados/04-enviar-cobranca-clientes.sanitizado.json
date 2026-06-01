@@ -1,0 +1,322 @@
+﻿{
+    "name":  "[COBRANCA] 04_ENVIAR_COBRANCA_CLIENTES",
+    "nodes":  [
+                  {
+                      "parameters":  {
+
+                                     },
+                      "type":  "n8n-nodes-base.manualTrigger",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "id":  "daa4419b-37ec-4d61-880c-fb8218145d1e",
+                      "name":  "When clicking 'Execute workflow'"
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/n8n_cobranca_v_resumo_cobranca_contato",
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "select",
+                                                                                        "value":  "*"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "order",
+                                                                                        "value":  "maior_dias_atraso.desc"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "limit",
+                                                                                        "value":  "10"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       224,
+                                       0
+                                   ],
+                      "id":  "d838bd10-24f2-4bcc-b37d-5eaaf31319c4",
+                      "name":  "HTTP GET | Buscar contatos cobráveis"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "function formatBRL(centavos) {\n  if (centavos === null || centavos === undefined) return \u0027-\u0027;\n\n  return (Number(centavos) / 100).toLocaleString(\u0027pt-BR\u0027, {\n    style: \u0027currency\u0027,\n    currency: \u0027BRL\u0027\n  });\n}\n\nfunction formatDateBR(dateStr) {\n  if (!dateStr) return \u0027-\u0027;\n\n  const [yyyy, mm, dd] = String(dateStr).split(\u0027T\u0027)[0].split(\u0027-\u0027);\n\n  if (!yyyy || !mm || !dd) return dateStr;\n\n  return `${dd}/${mm}/${yyyy}`;\n}\n\nfunction primeiroNome(nome) {\n  const clean = String(nome ?? \u0027\u0027).trim();\n  if (!clean) return \u0027\u0027;\n  return clean.split(/\\s+/)[0];\n}\n\nfunction saudacaoAtual() {\n  const hora = new Date().getHours();\n\n  if (hora \u003e= 5 \u0026\u0026 hora \u003c= 11) return \u0027Bom dia\u0027;\n  if (hora \u003e= 12 \u0026\u0026 hora \u003c= 17) return \u0027Boa tarde\u0027;\n\n  return \u0027Boa noite\u0027;\n}\n\nconst pendencias = Array.isArray($json.pendencias_json)\n  ? $json.pendencias_json\n  : [];\n\nif (!pendencias.length) {\n  throw new Error(\u0027Contato sem pendencias_json.\u0027);\n}\n\nconst diasAtraso = Number($json.maior_dias_atraso ?? 0);\nconst tentativas = Number($json.maior_tentativas_cobranca ?? 0);\n\nlet tipoMensagem = \u0027amigavel\u0027;\n\nif (diasAtraso \u003e= 15) {\n  tipoMensagem = \u0027firme\u0027;\n} else if (diasAtraso \u003e= 6) {\n  tipoMensagem = \u0027educada\u0027;\n}\n\nconst pendenciaIds = pendencias\n  .map(p =\u003e p.pendencia_id)\n  .filter(Boolean);\n\nconst total = Number(\n  $json.total_atualizado_centavos ??\n  pendencias.reduce((acc, p) =\u003e {\n    return acc + Number(p.valor_atualizado_centavos ?? p.valor_cobrado_centavos ?? 0);\n  }, 0)\n);\n\nconst linhasOS = pendencias.map(p =\u003e {\n  const valor = p.valor_atualizado_centavos ?? p.valor_cobrado_centavos;\n  return `OS ${p.num_os ?? \u0027-\u0027} - ${formatBRL(valor)} - venc. ${formatDateBR(p.vencimento)}`;\n}).join(\u0027\\n\u0027);\n\nconst qtd = pendencias.length;\nconst nomeContato = primeiroNome($json.contato_nome);\nconst saudacao = nomeContato\n  ? `${saudacaoAtual()}, ${nomeContato}.`\n  : `${saudacaoAtual()}.`;\n\nconst tituloDetalhes = qtd === 1\n  ? \u0027Detalhes da ordem de serviço em aberto:\u0027\n  : \u0027Detalhes das ordens de serviço em aberto:\u0027;\n\nlet corpo;\n\nif (tipoMensagem === \u0027amigavel\u0027) {\n  corpo = qtd === 1\n    ? `Identificamos um valor pendente de ${formatBRL(total)}, referente a uma ordem de serviço com vencimento em ${formatDateBR(pendencias[0].vencimento)}. Pode ter passado despercebido.`\n    : `Identificamos um valor pendente de ${formatBRL(total)}, referente a mais de uma ordem de serviço em aberto, com datas de vencimento diferentes. A mais antiga está em atraso há ${diasAtraso} dias.`;\n\n} else if (tipoMensagem === \u0027educada\u0027) {\n  corpo = qtd === 1\n    ? `Consta um valor pendente de ${formatBRL(total)}, referente a uma ordem de serviço com vencimento em ${formatDateBR(pendencias[0].vencimento)}. O pagamento está em atraso há ${diasAtraso} dias.`\n    : `Consta um valor pendente de ${formatBRL(total)}, distribuído em mais de uma ordem de serviço, com vencimentos em datas diferentes. A mais antiga está em atraso há ${diasAtraso} dias.`;\n\n} else {\n  corpo = qtd === 1\n    ? `Consta pendente o valor de ${formatBRL(total)}, referente a uma ordem de serviço vencida em ${formatDateBR(pendencias[0].vencimento)}. Como o atraso já é de ${diasAtraso} dias, pedimos prioridade no retorno.`\n    : `Consta pendente o valor total de ${formatBRL(total)}, referente a mais de uma ordem de serviço, com vencimentos em datas diferentes. A mais antiga está em atraso há ${diasAtraso} dias, por isso pedimos prioridade no retorno.`;\n}\n\nlet pedido;\n\nif (tipoMensagem === \u0027amigavel\u0027) {\n  pedido = \u0027Pode nos retornar com a previsão de pagamento ou enviar o comprovante por aqui?\u0027;\n} else if (tipoMensagem === \u0027educada\u0027) {\n  pedido = \u0027Por gentileza, nos retorne com uma previsão de pagamento ou informe se precisa de segunda via ou mais detalhes.\u0027;\n} else {\n  pedido = \u0027Solicitamos, por gentileza, um retorno com a previsão de pagamento ou o envio do comprovante, caso o pagamento já tenha sido realizado.\u0027;\n}\n\nconst encerramento = \u0027Se o pagamento já foi realizado, por gentileza, desconsidere esta mensagem.\u0027;\n\nconst mensagem = [\n  saudacao,\n  \u0027\u0027,\n  corpo,\n  \u0027\u0027,\n  pedido,\n  encerramento,\n  \u0027\u0027,\n  tituloDetalhes,\n  linhasOS\n].join(\u0027\\n\u0027);\n\nreturn {\n  json: {\n    ...$json,\n    cobranca_envio: {\n      to: $json.contato_whatsapp_norm,\n      mensagem,\n      pendencia_ids: pendenciaIds,\n      total_centavos: total,\n      qtd_pendencias: qtd,\n      dias_atraso: diasAtraso,\n      tentativas_cobranca: tentativas,\n      tipo_mensagem: tipoMensagem,\n      tom_cobranca: $json.tom_cobranca ?? null\n    }\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       432,
+                                       0
+                                   ],
+                      "id":  "aff7616b-4483-4bd2-8d42-4a5fb0de5a6c",
+                      "name":  "Montar mensagem cobrança cliente"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://gate.whapi.cloud/messages/text",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.WHAPI_TOKEN }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    to: $json.cobranca_envio.to,\n    body: $json.cobranca_envio.mensagem\n  }\n}}",
+                                         "options":  {
+                                                         "response":  {
+                                                                          "response":  {
+                                                                                           "responseFormat":  "json"
+                                                                                       }
+                                                                      }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       672,
+                                       0
+                                   ],
+                      "id":  "215ea2c1-a21b-41b9-a0b9-ec327ca8e171",
+                      "name":  "WHAPI | Enviar cobrança cliente",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cobranca_registrar_envio",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=representation"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  (() =\u003e {\n    const base = $node[\"Montar mensagem cobrança cliente\"].json;\n    const whapi = $json;\n\n    return {\n      p_cliente_id: base.cliente_id,\n      p_cliente_contato_id: base.cliente_contato_id,\n      p_pendencia_ids: base.cobranca_envio.pendencia_ids,\n      p_mensagem: base.cobranca_envio.mensagem,\n      p_whatsapp_message_id: whapi.message?.id ?? null,\n      p_raw_payload: {\n        workflow: \"[COBRANCA] 04_ENVIAR_COBRANCA_CLIENTES\",\n        cobranca_envio: base.cobranca_envio,\n        contato: {\n          cliente_id: base.cliente_id,\n          cliente_contato_id: base.cliente_contato_id,\n          cliente_nome_fantasia: base.cliente_nome_fantasia,\n          contato_nome: base.contato_nome,\n          contato_whatsapp_norm: base.contato_whatsapp_norm\n        },\n        pendencias_json: base.pendencias_json,\n        whapi_response: whapi\n      },\n      p_proximo_contato_em: null\n    };\n  })()\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       912,
+                                       0
+                                   ],
+                      "id":  "16817b06-720a-48cd-9401-b920eeeb17d9",
+                      "name":  "HTTP RPC | Registrar envio cobrança"
+                  },
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "*/30 11-17 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       0,
+                                       -176
+                                   ],
+                      "id":  "d3d83d81-9e86-4c3e-97f2-55bb3c29510c",
+                      "name":  "Schedule Trigger"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const base = $node[\"Montar mensagem cobrança cliente\"].json;\nconst whapi = $node[\"WHAPI | Enviar cobrança cliente\"].json;\nconst rpc = $json;\n\nconst formatBRL = (centavos) =\u003e {\n  return (Number(centavos ?? 0) / 100).toLocaleString(\u0027pt-BR\u0027, {\n    style: \u0027currency\u0027,\n    currency: \u0027BRL\u0027\n  });\n};\n\nconst mensagem = [\n  \u0027[Cobrança enviada] *Cobrança enviada ao cliente*\u0027,\n  \u0027\u0027,\n  `*Cliente:* ${base.cliente_nome_fantasia ?? base.cliente_razao_social ?? \u0027-\u0027}`,\n  `*Contato:* ${base.contato_nome ?? \u0027-\u0027}`,\n  `*WhatsApp:* ${base.contato_whatsapp_norm ?? \u0027-\u0027}`,\n  \u0027\u0027,\n  `*Pendências:* ${base.cobranca_envio.qtd_pendencias}`,\n  `*Total:* ${formatBRL(base.cobranca_envio.total_centavos)}`,\n  `*Dias atraso:* ${base.cobranca_envio.dias_atraso}`,\n  `*Tentativas anteriores:* ${base.cobranca_envio.tentativas_cobranca}`\n].join(\u0027\\n\u0027);\n\nreturn {\n  json: {\n    ...base,\n    alerta_interno: {\n      mensagem,\n      whatsapp_message_id: whapi.message?.id ?? null,\n      rpc_result: rpc\n    }\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1120,
+                                       0
+                                   ],
+                      "id":  "fcee6fd1-91ff-49f4-91c3-a097455931d2",
+                      "name":  "Code | Montar alerta interno envio"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://gate.whapi.cloud/messages/text",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.WHAPI_TOKEN }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    to: $env.WHAPI_INTERNAL_GROUP_ID,\n    body: $json.alerta_interno.mensagem\n  }\n}}",
+                                         "options":  {
+                                                         "response":  {
+                                                                          "response":  {
+                                                                                           "responseFormat":  "json"
+                                                                                       }
+                                                                      }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       1360,
+                                       0
+                                   ],
+                      "id":  "30d350b0-06a3-47ec-8f8f-e2d3bec5de86",
+                      "name":  "WHAPI | Enviar alerta interno envio",
+                      "alwaysOutputData":  false
+                  }
+              ],
+    "connections":  {
+                        "When clicking 'Execute workflow'":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "HTTP GET | Buscar contatos cobráveis",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                        "HTTP GET | Buscar contatos cobráveis":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Montar mensagem cobrança cliente",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                        "Montar mensagem cobrança cliente":  {
+                                                                  "main":  [
+                                                                               [
+                                                                                   {
+                                                                                       "node":  "WHAPI | Enviar cobrança cliente",
+                                                                                       "type":  "main",
+                                                                                       "index":  0
+                                                                                   }
+                                                                               ]
+                                                                           ]
+                                                              },
+                        "WHAPI | Enviar cobrança cliente":  {
+                                                                 "main":  [
+                                                                              [
+                                                                                  {
+                                                                                      "node":  "HTTP RPC | Registrar envio cobrança",
+                                                                                      "type":  "main",
+                                                                                      "index":  0
+                                                                                  }
+                                                                              ]
+                                                                          ]
+                                                             },
+                        "Schedule Trigger":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "HTTP GET | Buscar contatos cobráveis",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "HTTP RPC | Registrar envio cobrança":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Code | Montar alerta interno envio",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                        "Code | Montar alerta interno envio":  {
+                                                                   "main":  [
+                                                                                [
+                                                                                    {
+                                                                                        "node":  "WHAPI | Enviar alerta interno envio",
+                                                                                        "type":  "main",
+                                                                                        "index":  0
+                                                                                    }
+                                                                                ]
+                                                                            ]
+                                                               }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 }
+}
+
+
+
+
+

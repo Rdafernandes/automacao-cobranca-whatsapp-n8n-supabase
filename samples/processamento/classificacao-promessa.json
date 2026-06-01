@@ -1,0 +1,19 @@
+{
+  "processamento": {
+    "tipo_operacional": "texto",
+    "texto": "Recebi, consigo pagar amanhã até o fim do dia.",
+    "tem_texto": true
+  },
+  "ia": {
+    "classificacao_ia": "PAGAMENTO_PROMETIDO",
+    "categoria": "validacao",
+    "status_cobranca": "aguardando_pagamento",
+    "resumo_observacao": "Cliente informou que consegue pagar amanhã até o fim do dia.",
+    "promessa_pagamento_data": "2026-06-02",
+    "motivo_pausa": "promessa_pagamento"
+  },
+  "rpc": {
+    "name": "public.n8n_cobranca_registrar_resposta_cliente",
+    "efeito_esperado": "Registrar interação de entrada, atualizar pendência para aguardando_pagamento e calcular pausado_ate."
+  }
+}

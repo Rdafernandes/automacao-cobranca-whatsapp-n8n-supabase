@@ -1,0 +1,35 @@
+{
+  "source": "whapi_cobranca_gateway",
+  "received_at": "2026-06-01T16:05:00.000Z",
+  "gateway": {
+    "permitido": true,
+    "modo_teste": true,
+    "motivo_bloqueio": null
+  },
+  "contato": {
+    "cobranca_cliente_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01",
+    "cliente_id": "11111111-1111-1111-1111-111111111111",
+    "cliente_contato_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
+    "contato_nome": "{{contato}}",
+    "whatsapp_norm": "5511999990001"
+  },
+  "whapi": {
+    "message_id": "wamid.demo.contestacao.001",
+    "chat_id": "5511999990001@s.whatsapp.net",
+    "from_me": false,
+    "type": "text",
+    "sender_whatsapp_norm": "5511999990001",
+    "text_body": "Esse valor está errado, essa OS já foi resolvida com o comercial.",
+    "mime_type": "",
+    "media": {
+      "id": null,
+      "url": null,
+      "filename": "",
+      "mime_type": "",
+      "caption": ""
+    },
+    "raw_payload": {
+      "demo": true
+    }
+  }
+}

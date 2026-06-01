@@ -1,0 +1,23 @@
+{
+  "arquivo": {
+    "tipo_analise": "pdf",
+    "file_name": "comprovante-demo.pdf",
+    "mime_type": "application/pdf",
+    "source_url": "https://example.com/demo/comprovante-ficticio.pdf"
+  },
+  "comprovante_ia": {
+    "classificacao_ia": "COMPROVANTE_PROVAVEL",
+    "tipo_documento": "comprovante_pix",
+    "valor_extraido_centavos": 78000,
+    "data_extraida": "2026-06-01",
+    "autenticacao": "AUTH-DEMO-123",
+    "favorecido": "{{empresa_recebedora}}",
+    "pagador": "{{cliente}}",
+    "confianca": "alta",
+    "observacoes": "Arquivo fictício parece conter dados suficientes para validação humana."
+  },
+  "rpc": {
+    "name": "public.n8n_cobranca_registrar_comprovante",
+    "efeito_esperado": "Criar comprovante pendente, registrar interação e pausar cobrança até validação humana."
+  }
+}

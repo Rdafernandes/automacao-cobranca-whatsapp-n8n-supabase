@@ -1,0 +1,300 @@
+﻿{
+    "name":  "[COBRANCA] 01_GATEWAY_WHAPI",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "cobranca/whapi/gateway",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "id":  "8ca37243-4c33-4fd5-b21a-77cbc201cab3",
+                      "name":  "Webhook",
+                      "webhookId":  "8e34df91-53b9-47eb-8f6e-3b08a62cd9f4"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const body = $json.body ?? $json;\nconst msg = body.messages?.[0] ?? body.message ?? body;\n\nfunction pick(...vals) {\n  return vals.find(v =\u003e v !== undefined \u0026\u0026 v !== null \u0026\u0026 String(v).trim() !== \u0027\u0027);\n}\n\nfunction digits(v) {\n  const d = String(v ?? \u0027\u0027).replace(/\\D/g, \u0027\u0027);\n  if (!d) return null;\n  if (d.startsWith(\u002755\u0027) \u0026\u0026 (d.length === 12 || d.length === 13)) return d;\n  if (d.length === 10 || d.length === 11) return `55${d}`;\n  return d;\n}\n\nconst chatId = pick(\n  msg.chat_id,\n  msg.chatId,\n  msg.chat?.id,\n  msg.from,\n  body.chat_id\n);\n\nconst messageId = pick(\n  msg.id,\n  msg.message_id,\n  msg.key?.id,\n  body.id\n);\n\nconst fromMe = Boolean(\n  msg.from_me === true ||\n  msg.fromMe === true ||\n  msg.key?.fromMe === true\n);\n\nconst type = String(pick(msg.type, msg.message_type, msg.event?.type, \u0027\u0027) || \u0027\u0027).toLowerCase();\n\nconst senderRaw = pick(\n  msg.from,\n  msg.sender,\n  msg.participant,\n  msg.author,\n  msg.contact?.id,\n  chatId\n);\n\nconst isGroup = String(chatId || \u0027\u0027).includes(\u0027@g.us\u0027);\nconst isPrivate =\n  String(chatId || \u0027\u0027).includes(\u0027@s.whatsapp.net\u0027) ||\n  String(chatId || \u0027\u0027).includes(\u0027@c.us\u0027) ||\n  (!isGroup \u0026\u0026 digits(senderRaw));\n\nconst textBody = pick(\n  msg.text?.body,\n  msg.text,\n  msg.body,\n  msg.message?.conversation,\n  msg.caption,\n  msg.image?.caption,\n  msg.video?.caption,\n  msg.document?.caption,\n  \u0027\u0027\n);\n\nconst documentObj = msg.document ?? msg.file ?? msg.media ?? {};\nconst imageObj = msg.image ?? {};\nconst audioObj = msg.audio ?? msg.voice ?? {};\nconst videoObj = msg.video ?? {};\n\nconst filename = String(pick(\n  documentObj.file_name,\n  documentObj.filename,\n  documentObj.name,\n  msg.filename,\n  msg.file_name,\n  \u0027\u0027\n) || \u0027\u0027);\n\nconst mimeType = String(pick(\n  documentObj.mime_type,\n  documentObj.mimetype,\n  documentObj.mimeType,\n\n  imageObj.mime_type,\n  imageObj.mimetype,\n  imageObj.mimeType,\n\n  audioObj.mime_type,\n  audioObj.mimetype,\n  audioObj.mimeType,\n\n  videoObj.mime_type,\n  videoObj.mimetype,\n  videoObj.mimeType,\n\n  msg.media?.mime_type,\n  msg.media?.mimetype,\n  msg.media?.mimeType,\n\n  msg.file?.mime_type,\n  msg.file?.mimetype,\n  msg.file?.mimeType,\n\n  msg.mime_type,\n  msg.mimetype,\n  msg.mimeType,\n  \u0027\u0027\n) || \u0027\u0027).toLowerCase();\n\nconst isPdf = mimeType.includes(\u0027pdf\u0027) || filename.toLowerCase().endsWith(\u0027.pdf\u0027);\n\nconst isPdfOs =\n  isPdf \u0026\u0026\n  (\n    /ordem[\\s_-]*de[\\s_-]*serv/i.test(filename) ||\n    /ordem.*servi/i.test(filename) ||\n    /^os[\\s_-]?\\d+.*\\.pdf$/i.test(filename)\n  );\n\nlet permitido_payload = true;\nlet motivo_bloqueio = null;\n\nif (fromMe) {\n  permitido_payload = false;\n  motivo_bloqueio = \u0027from_me\u0027;\n} else if (isGroup) {\n  permitido_payload = false;\n  motivo_bloqueio = \u0027grupo\u0027;\n} else if (!isPrivate) {\n  permitido_payload = false;\n  motivo_bloqueio = \u0027nao_dm_privada\u0027;\n} else if (isPdfOs) {\n  permitido_payload = false;\n  motivo_bloqueio = \u0027pdf_ordem_servico\u0027;\n}\n\nreturn [{\n  json: {\n    permitido_payload,\n    motivo_bloqueio,\n\n    whapi: {\n      message_id: messageId,\n      chat_id: chatId,\n      from_me: fromMe,\n      type,\n      sender_raw: senderRaw,\n      sender_whatsapp_norm: digits(senderRaw),\n      text_body: textBody,\n      filename,\n      mime_type: mimeType,\n      is_pdf: isPdf,\n      is_pdf_os: isPdfOs,\n\n      media: {\n        id: pick(\n          documentObj.id,\n          imageObj.id,\n          audioObj.id,\n          videoObj.id,\n          msg.media?.id,\n          msg.file?.id\n        ),\n        url: pick(\n          documentObj.link,\n          documentObj.url,\n          documentObj.download_url,\n          documentObj.downloadUrl,\n          imageObj.link,\n          imageObj.url,\n          imageObj.download_url,\n          imageObj.downloadUrl,\n          audioObj.link,\n          audioObj.url,\n          audioObj.download_url,\n          audioObj.downloadUrl,\n          videoObj.link,\n          videoObj.url,\n          videoObj.download_url,\n          videoObj.downloadUrl,\n          msg.media?.link,\n          msg.media?.url,\n          msg.file?.link,\n          msg.file?.url\n        ),\n        filename,\n        mime_type: mimeType,\n        caption: textBody\n      },\n\n      raw_payload: body\n    }\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       208,
+                                       0
+                                   ],
+                      "id":  "74cf5140-2130-476a-93cb-cb238c2676b5",
+                      "name":  "Normalizar payload Whapi"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  3
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "13cf36c9-665e-4974-affd-7384c739b819",
+                                                                                   "leftValue":  "={{ $json.permitido_payload }}",
+                                                                                   "rightValue":  "",
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "true",
+                                                                                                    "singleValue":  true
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.3,
+                      "position":  [
+                                       416,
+                                       0
+                                   ],
+                      "id":  "e5094e6f-ffb9-493b-a5f8-f22a0d340179",
+                      "name":  "Payload passou?"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  3
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "078428ac-b01a-41cf-955c-31eaa70e370d",
+                                                                                   "leftValue":  "={{ $json.gateway_resolucao.permitido }}",
+                                                                                   "rightValue":  "",
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "true",
+                                                                                                    "singleValue":  true
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.3,
+                      "position":  [
+                                       1072,
+                                       -144
+                                   ],
+                      "id":  "ef368105-777d-4dcb-9e42-159ea4bc3d90",
+                      "name":  "Contato autorizado?"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "return [{\n  json: {\n    source: \u0027whapi_cobranca_gateway\u0027,\n    received_at: new Date().toISOString(),\n\n    gateway: {\n      permitido: $json.gateway_resolucao.permitido,\n      modo_teste: $json.gateway_resolucao.modo_teste,\n      motivo_bloqueio: $json.gateway_resolucao.motivo_bloqueio\n    },\n\n    contato: {\n      cobranca_cliente_id: $json.gateway_resolucao.cobranca_cliente_id,\n      cliente_id: $json.gateway_resolucao.cliente_id,\n      cliente_contato_id: $json.gateway_resolucao.cliente_contato_id,\n      contato_nome: $json.gateway_resolucao.contato_nome,\n      whatsapp_norm: $json.gateway_resolucao.whatsapp_norm\n    },\n\n    whapi: $json.whapi\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1296,
+                                       -240
+                                   ],
+                      "id":  "163d0b60-3483-41b7-95de-93efcc9e48c9",
+                      "name":  "Montar payload subworkflow"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cobranca_gateway_resolver_contato",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    p_whatsapp: $json.whapi.sender_whatsapp_norm\n  }\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       672,
+                                       -144
+                                   ],
+                      "id":  "f9c4d3c9-0ee2-43f9-8365-e5f23fa392f8",
+                      "name":  "HTTP RPC | Resolver contato cobrança"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const normalizado = $node[\"Normalizar payload Whapi\"].json;\n\nlet rpc = $json;\n\nif (Array.isArray(rpc)) {\n  rpc = rpc[0] ?? {};\n}\n\nif (Array.isArray($json.body)) {\n  rpc = $json.body[0] ?? {};\n}\n\nif ($json.body \u0026\u0026 !Array.isArray($json.body)) {\n  rpc = $json.body;\n}\n\nreturn [{\n  json: {\n    ...normalizado,\n\n    gateway_resolucao: {\n      permitido: rpc.permitido === true,\n      motivo_bloqueio: rpc.motivo_bloqueio ?? null,\n      modo_teste: rpc.modo_teste === true,\n      whatsapp_norm: rpc.whatsapp_norm ?? null,\n      cobranca_cliente_id: rpc.cobranca_cliente_id ?? null,\n      cliente_id: rpc.cliente_id ?? null,\n      cliente_contato_id: rpc.cliente_contato_id ?? null,\n      contato_nome: rpc.contato_nome ?? null\n    }\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       880,
+                                       -144
+                                   ],
+                      "id":  "cbad6316-bf3d-4c88-a7d3-eb1c0224b875",
+                      "name":  "Normalizar retorno RPC contato"
+                  },
+                  {
+                      "parameters":  {
+                                         "workflowId":  {
+                                                            "__rl":  true,
+                                                            "value":  "REPLACE_WITH_WORKFLOW_02_PROCESSAR_MENSAGEM_ID",
+                                                            "mode":  "list",
+                                                            "cachedResultUrl":  "/workflow/REPLACE_WITH_WORKFLOW_02_PROCESSAR_MENSAGEM_ID",
+                                                            "cachedResultName":  "[COBRANCA] 02_PROCESSAR_MENSAGEM"
+                                                        },
+                                         "workflowInputs":  {
+                                                                "mappingMode":  "defineBelow",
+                                                                "value":  {
+
+                                                                          },
+                                                                "matchingColumns":  [
+
+                                                                                    ],
+                                                                "schema":  [
+
+                                                                           ],
+                                                                "attemptToConvertTypes":  false,
+                                                                "convertFieldsToString":  true
+                                                            },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.executeWorkflow",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       1504,
+                                       -240
+                                   ],
+                      "id":  "ff6829cd-2f90-41c0-bdc3-b0ae5ef60967",
+                      "name":  "Call \u0027[COBRANCA] 02_PROCESSAR_MENSAGEM\u0027"
+                  }
+              ],
+    "connections":  {
+                        "Webhook":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Normalizar payload Whapi",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Normalizar payload Whapi":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Payload passou?",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "Payload passou?":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "HTTP RPC | Resolver contato cobrança",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Contato autorizado?":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Montar payload subworkflow",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "HTTP RPC | Resolver contato cobrança":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Normalizar retorno RPC contato",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  },
+                        "Normalizar retorno RPC contato":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Contato autorizado?",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Montar payload subworkflow":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Call \u0027[COBRANCA] 02_PROCESSAR_MENSAGEM\u0027",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 }
+}
+
+
+
+
+
+

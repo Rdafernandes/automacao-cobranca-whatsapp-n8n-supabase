@@ -1,0 +1,35 @@
+{
+  "source": "whapi_cobranca_gateway",
+  "received_at": "2026-06-01T14:15:00.000Z",
+  "gateway": {
+    "permitido": true,
+    "modo_teste": true,
+    "motivo_bloqueio": null
+  },
+  "contato": {
+    "cobranca_cliente_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb02",
+    "cliente_id": "22222222-2222-2222-2222-222222222222",
+    "cliente_contato_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2",
+    "contato_nome": "{{contato}}",
+    "whatsapp_norm": "5511999990002"
+  },
+  "whapi": {
+    "message_id": "wamid.demo.promessa.001",
+    "chat_id": "5511999990002@s.whatsapp.net",
+    "from_me": false,
+    "type": "text",
+    "sender_whatsapp_norm": "5511999990002",
+    "text_body": "Recebi, consigo pagar amanhã até o fim do dia.",
+    "mime_type": "",
+    "media": {
+      "id": null,
+      "url": null,
+      "filename": "",
+      "mime_type": "",
+      "caption": ""
+    },
+    "raw_payload": {
+      "demo": true
+    }
+  }
+}

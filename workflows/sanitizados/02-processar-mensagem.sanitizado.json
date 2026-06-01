@@ -1,0 +1,804 @@
+﻿{
+    "name":  "[COBRANCA] 02_PROCESSAR_MENSAGEM",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "inputSource":  "passthrough"
+                                     },
+                      "type":  "n8n-nodes-base.executeWorkflowTrigger",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "id":  "ad351c80-4b50-432b-946e-35bea38d65e6",
+                      "name":  "When Executed by Another Workflow"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const whapi = $json.whapi ?? {};\nconst type = String(whapi.type ?? \u0027\u0027).toLowerCase();\nconst mime = String(whapi.mime_type ?? \u0027\u0027).toLowerCase();\nconst filename = String(whapi.filename ?? \u0027\u0027).toLowerCase();\nconst text = String(whapi.text_body ?? \u0027\u0027).trim();\n\nlet tipo_operacional = \u0027outro\u0027;\n\nif ([\u0027text\u0027, \u0027chat\u0027, \u0027conversation\u0027].includes(type) || text.length \u003e 0) {\n  tipo_operacional = \u0027texto\u0027;\n}\n\nif ([\u0027audio\u0027, \u0027voice\u0027, \u0027ptt\u0027].includes(type) || mime.startsWith(\u0027audio/\u0027)) {\n  tipo_operacional = \u0027audio\u0027;\n}\n\nif (\n  [\u0027image\u0027, \u0027document\u0027, \u0027file\u0027, \u0027video\u0027].includes(type) ||\n  mime.startsWith(\u0027image/\u0027) ||\n  mime.includes(\u0027pdf\u0027) ||\n  filename.length \u003e 0\n) {\n  tipo_operacional = \u0027arquivo_comprovante\u0027;\n}\n\nreturn {\n  json: {\n    ...$json,\n    processamento: {\n      tipo_operacional,\n      type_original: type,\n      mime_type: mime,\n      filename,\n      tem_texto: text.length \u003e 0,\n      texto: text\n    }\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       208,
+                                       0
+                                   ],
+                      "id":  "6d8b8a9e-06f7-4cfb-808c-7bc0173cac9f",
+                      "name":  "Classificar tipo operacional"
+                  },
+                  {
+                      "parameters":  {
+                                         "rules":  {
+                                                       "values":  [
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "leftValue":  "={{ $json.processamento.tipo_operacional }}",
+                                                                                                                    "rightValue":  "texto",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals"
+                                                                                                                                 },
+                                                                                                                    "id":  "b3dfb8bf-42b8-45a4-84db-a459de59fe04"
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Texto"
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "df52c0a4-5ce7-40a8-a2d8-2b29479e6bc1",
+                                                                                                                    "leftValue":  "={{ $json.processamento.tipo_operacional }}",
+                                                                                                                    "rightValue":  "audio",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals",
+                                                                                                                                     "name":  "filter.operator.equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Audio"
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "43710ac8-3d63-4475-9e4c-33c3740e015b",
+                                                                                                                    "leftValue":  "={{ $json.processamento.tipo_operacional }}",
+                                                                                                                    "rightValue":  "arquivo_comprovante",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals",
+                                                                                                                                     "name":  "filter.operator.equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Comprovante"
+                                                                      }
+                                                                  ]
+                                                   },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.switch",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       416,
+                                       -16
+                                   ],
+                      "id":  "84a47bcc-aab2-49d4-8083-223bd000e7dd",
+                      "name":  "Switch | Tipo mensagem"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelId":  {
+                                                         "__rl":  true,
+                                                         "value":  "gpt-4.1-mini",
+                                                         "mode":  "list",
+                                                         "cachedResultName":  "GPT-4.1-MINI"
+                                                     },
+                                         "responses":  {
+                                                           "values":  [
+                                                                          {
+                                                                              "role":  "system",
+                                                                              "content":  "Você é um classificador operacional de respostas de clientes em uma automação de cobrança da {{empresa}}.\n\nAnalise mensagens recebidas por WhatsApp e retorne apenas JSON válido, sem markdown, sem comentários e sem texto fora do JSON.\n\nSua função:\n1. Classificar a intenção da mensagem.\n2. Definir se altera status da cobrança.\n3. Identificar promessa de pagamento com data objetiva quando existir.\n4. Nunca validar pagamento definitivamente.\n5. Nunca inventar comprovante recebido se não houver arquivo/anexo.\n\nCategorias possíveis de classificacao_ia:\n- PAGAMENTO_CONFIRMADO\n- PAGAMENTO_PROMETIDO\n- NEGOCIACAO\n- DIFICULDADE\n- CONTESTACAO\n- DUVIDA\n- SPAM\n- AGRESSIVO\n- OUTRO\n\nCategorias possíveis de categoria:\n- negociacao\n- validacao\n- duvida\n- outro\n\nStatus possíveis de status_cobranca:\n- aguardando_pagamento\n- negociando\n- em_analise\n- SEM_ALTERACAO\n\nRegras:\n1. Mensagem de teste, saudação genérica, emoji, resposta vazia ou sem conteúdo operacional deve ser OUTRO, outro, SEM_ALTERACAO.\n2. Se o cliente disser que vai pagar em data futura, use PAGAMENTO_PROMETIDO e aguardando_pagamento.\n3. Se disser \"amanhã\", calcule a data com base na data de referência.\n4. Se disser dia da semana, calcule a próxima ocorrência desse dia com base na data de referência.\n5. Se disser \"essa semana\", \"ainda essa semana\" ou similar, use a sexta-feira da semana da data de referência como promessa_pagamento_data.\n6. Se pedir prazo, desconto, parcelamento, segunda via, renegociação ou acordo, use NEGOCIACAO e negociando.\n7. Se contestar valor, OS, serviço, produto, compra ou responsável pelo pedido, use CONTESTACAO e em_analise.\n8. Se indicar dificuldade financeira, use DIFICULDADE e negociando.\n9. Se for dúvida simples sem promessa, sem negociação e sem contestação, use DUVIDA e SEM_ALTERACAO.\n10. Se houver xingamento, ameaça ou linguagem agressiva, use AGRESSIVO e em_analise.\n11. Se houver promessa de pagamento com data identificável, preencha promessa_pagamento_data em YYYY-MM-DD e motivo_pausa como promessa_pagamento.\n12. Se não houver promessa com data identificável, promessa_pagamento_data deve ser null e motivo_pausa deve ser null.\n13. resumo_observacao deve ser curto, objetivo e em português."
+                                                                          },
+                                                                          {
+                                                                              "content":  "=Data/hora de referência no Brasil:\n{{ new Date((($json.whapi?.raw_payload?.messages?.[0]?.timestamp ?? Math.floor(Date.now() / 1000)) * 1000)).toLocaleString(\u0027sv-SE\u0027, { timeZone: \u0027America/Sao_Paulo\u0027 }) }}\n\nCliente:\n{{ $json.contato.contato_nome }}\n\nWhatsApp normalizado:\n{{ $json.contato.whatsapp_norm }}\n\nMensagem recebida:\n{{ $json.processamento.texto }}\n\nRetorne exatamente neste formato JSON:\n\n{\n  \"classificacao_ia\": \"PAGAMENTO_CONFIRMADO | PAGAMENTO_PROMETIDO | NEGOCIACAO | DIFICULDADE | CONTESTACAO | DUVIDA | SPAM | AGRESSIVO | OUTRO\",\n  \"categoria\": \"negociacao | validacao | duvida | outro\",\n  \"status_cobranca\": \"aguardando_pagamento | negociando | em_analise | SEM_ALTERACAO\",\n  \"resumo_observacao\": \"resumo curto em português\",\n  \"promessa_pagamento_data\": null,\n  \"motivo_pausa\": null\n}"
+                                                                          }
+                                                                      ]
+                                                       },
+                                         "builtInTools":  {
+
+                                                          },
+                                         "options":  {
+                                                         "textFormat":  {
+                                                                            "textOptions":  {
+                                                                                                "type":  "json_object"
+                                                                                            }
+                                                                        },
+                                                         "temperature":  0
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.openAi",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       672,
+                                       -224
+                                   ],
+                      "id":  "0e848dc1-4c73-4fbd-909a-19806e60114a",
+                      "name":  "IA | Classificar resposta texto"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "let parsed = null;\n\ntry {\n  const out = $json.output?.[0];\n  const content = out?.content?.[0];\n  const rawText = content?.text;\n\n  if (typeof rawText === \u0027object\u0027 \u0026\u0026 rawText !== null) {\n    parsed = rawText;\n  } else if (typeof rawText === \u0027string\u0027) {\n    parsed = JSON.parse(rawText);\n  }\n} catch (error) {\n  parsed = null;\n}\n\nif (!parsed) {\n  parsed = {\n    classificacao_ia: \u0027OUTRO\u0027,\n    categoria: \u0027outro\u0027,\n    status_cobranca: \u0027SEM_ALTERACAO\u0027,\n    resumo_observacao: \u0027Falha ao normalizar resposta da IA.\u0027,\n    promessa_pagamento_data: null,\n    motivo_pausa: null\n  };\n}\n\nreturn {\n  json: {\n    ...$node[\"Switch | Tipo mensagem\"].json,\n\n    ia: {\n      classificacao_ia: parsed.classificacao_ia ?? \u0027OUTRO\u0027,\n      categoria: parsed.categoria ?? \u0027outro\u0027,\n      status_cobranca: parsed.status_cobranca ?? \u0027SEM_ALTERACAO\u0027,\n      resumo_observacao: parsed.resumo_observacao ?? \u0027\u0027,\n\n      promessa_pagamento_data: parsed.promessa_pagamento_data ?? null,\n      motivo_pausa: parsed.motivo_pausa ?? null,\n      pausado_ate: parsed.pausado_ate ?? null\n    },\n\n    openai_raw: $json\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1024,
+                                       -224
+                                   ],
+                      "id":  "f64028ff-cd4b-4cec-a854-f9188a1867b2",
+                      "name":  "Normalizar JSON IA"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cobranca_registrar_resposta_cliente",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=representation"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    p_cliente_contato_id: $json.contato.cliente_contato_id,\n    p_mensagem: $json.processamento.texto,\n    p_classificacao_ia: $json.ia.classificacao_ia,\n    p_categoria: $json.ia.categoria,\n    p_status_cobranca: $json.ia.status_cobranca,\n    p_resumo_observacao: $json.ia.resumo_observacao,\n    p_whatsapp_message_id: $json.whapi.message_id,\n    p_anexo_url: null,\n    p_raw_payload: {\n      whapi: $json.whapi.raw_payload,\n      processamento: $json.processamento,\n      ia: $json.ia\n    }\n  }\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       1264,
+                                       -224
+                                   ],
+                      "id":  "d00279d1-4da5-48ba-a1c9-5486beff8eb9",
+                      "name":  "HTTP RPC | Registrar resposta cliente"
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "={{ $json.whapi.media.url }}",
+                                         "options":  {
+                                                         "response":  {
+                                                                          "response":  {
+                                                                                           "responseFormat":  "file"
+                                                                                       }
+                                                                      }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       672,
+                                       208
+                                   ],
+                      "id":  "2b29d98e-ff97-44a6-9754-d20b4944b28c",
+                      "name":  "HTTP | Baixar mídia Whapi"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const whapi = $json.whapi ?? {};\nconst media = whapi.media ?? {};\nconst binary = $binary?.data;\n\nfunction extFromMime(mime) {\n  const m = String(mime ?? \u0027\u0027).toLowerCase();\n\n  if (m.includes(\u0027jpeg\u0027) || m.includes(\u0027jpg\u0027)) return \u0027jpg\u0027;\n  if (m.includes(\u0027png\u0027)) return \u0027png\u0027;\n  if (m.includes(\u0027webp\u0027)) return \u0027webp\u0027;\n  if (m.includes(\u0027pdf\u0027)) return \u0027pdf\u0027;\n  if (m.includes(\u0027heic\u0027)) return \u0027heic\u0027;\n\n  return \u0027bin\u0027;\n}\n\nfunction cleanName(value) {\n  return String(value ?? \u0027\u0027)\n    .normalize(\u0027NFD\u0027)\n    .replace(/[\\u0300-\\u036f]/g, \u0027\u0027)\n    .replace(/[^\\w.-]+/g, \u0027_\u0027)\n    .replace(/_+/g, \u0027_\u0027)\n    .replace(/^_+|_+$/g, \u0027\u0027)\n    .slice(0, 120);\n}\n\nconst mimeType =\n  whapi.mime_type ||\n  media.mime_type ||\n  binary?.mimeType ||\n  \u0027application/octet-stream\u0027;\n\nconst ext = extFromMime(mimeType);\n\nconst originalFilename =\n  media.filename ||\n  whapi.filename ||\n  binary?.fileName ||\n  \u0027\u0027;\n\nconst fileName = originalFilename\n  ? cleanName(originalFilename)\n  : cleanName([\n      \u0027cobranca\u0027,\n      $json.contato?.cliente_id,\n      $json.contato?.cliente_contato_id,\n      whapi.message_id\n    ].filter(Boolean).join(\u0027_\u0027)) + `.${ext}`;\n\nconst isImage = String(mimeType).startsWith(\u0027image/\u0027);\nconst isPdf = String(mimeType).includes(\u0027pdf\u0027) || fileName.toLowerCase().endsWith(\u0027.pdf\u0027);\n\nlet tipo_analise = \u0027nao_suportado\u0027;\n\nif (isImage) tipo_analise = \u0027imagem\u0027;\nif (isPdf) tipo_analise = \u0027pdf\u0027;\n\nreturn {\n  json: {\n    ...$json,\n    arquivo: {\n      tipo_analise,\n      file_name: fileName,\n      mime_type: mimeType,\n      extension: ext,\n      source_url: media.url ?? null,\n      media_id: media.id ?? null,\n      caption: media.caption ?? whapi.text_body ?? \u0027\u0027,\n      binary_property: \u0027data\u0027,\n      pode_analisar_ia: [\u0027imagem\u0027, \u0027pdf\u0027].includes(tipo_analise)\n    }\n  },\n  binary: $binary\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       880,
+                                       208
+                                   ],
+                      "id":  "159ee88f-b761-49bf-8904-f65af7eed21e",
+                      "name":  "Preparar mídia para análise IA"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://api.openai.com/v1/responses",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.OPENAI_API_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  (() =\u003e {\n    const base = $node[\"Preparar mídia para análise IA\"].json;\n    const upload = $json;\n\n    return {\n      model: \"gpt-4.1-mini\",\n      temperature: 0,\n      text: {\n        format: {\n          type: \"json_object\"\n        }\n      },\n      input: [\n        {\n          role: \"system\",\n          content: [\n            {\n              type: \"input_text\",\n              text:\n                \"Você é um classificador operacional de comprovantes de pagamento da {{empresa}}. Analise arquivos enviados por clientes via WhatsApp. Retorne apenas JSON válido, sem markdown. Não valide pagamento definitivamente; apenas classifique se o arquivo parece comprovante e extraia sinais visíveis.\"\n            }\n          ]\n        },\n        {\n          role: \"user\",\n          content: [\n            {\n              type: \"input_file\",\n              file_id: upload.id\n            },\n            {\n              type: \"input_text\",\n              text:\n                `Contexto:\\n` +\n                `Cliente/contato: ${base.contato?.contato_nome || \"-\"}\\n` +\n                `Arquivo original: ${base.arquivo?.file_name || \"-\"}\\n` +\n                `Tipo: ${base.arquivo?.mime_type || \"-\"}\\n` +\n                `Legenda/caption: ${base.arquivo?.caption || \"-\"}\\n\\n` +\n\n                `Tarefa:\\n` +\n                `Classifique se o arquivo enviado parece ser comprovante de pagamento.\\n\\n` +\n\n                `Retorne exatamente este JSON:\\n` +\n                `{\\n` +\n                `  \"classificacao_ia\": \"COMPROVANTE_PROVAVEL | NAO_COMPROVANTE | INCONCLUSIVO\",\\n` +\n                `  \"tipo_documento\": \"pix | transferencia | boleto | deposito | recibo | print_bancario | outro | desconhecido\",\\n` +\n                `  \"valor_extraido_centavos\": null,\\n` +\n                `  \"data_extraida\": null,\\n` +\n                `  \"autenticacao\": null,\\n` +\n                `  \"favorecido\": null,\\n` +\n                `  \"pagador\": null,\\n` +\n                `  \"confianca\": \"alta | media | baixa\",\\n` +\n                `  \"observacoes\": \"resumo curto em português\"\\n` +\n                `}\\n\\n` +\n\n                `Regras:\\n` +\n                `- Se parecer comprovante bancário, PIX, transferência, depósito, boleto pago, recibo ou print bancário, use COMPROVANTE_PROVAVEL.\\n` +\n                `- Se for claramente outro arquivo, use NAO_COMPROVANTE.\\n` +\n                `- Se não der para ler ou houver dúvida, use INCONCLUSIVO.\\n` +\n                `- valor_extraido_centavos deve ser inteiro em centavos. Exemplo: R$ 1.234,56 = 123456.\\n` +\n                `- data_extraida deve estar em YYYY-MM-DD ou null.\\n` +\n                `- autenticacao pode ser código, ID, NSU, hash, comprovante, transação ou null.\\n` +\n                `- Nunca diga que o pagamento está validado. Validação final é humana.`\n            }\n          ]\n        }\n      ]\n    };\n  })()\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       1344,
+                                       208
+                                   ],
+                      "id":  "9aab7f06-e170-410d-8147-69317a937173",
+                      "name":  "HTTP | IA analisar comprovante"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://api.openai.com/v1/files",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.OPENAI_API_KEY }}"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "contentType":  "multipart-form-data",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+                                                                                       "name":  "purpose",
+                                                                                       "value":  "user_data"
+                                                                                   },
+                                                                                   {
+                                                                                       "parameterType":  "formBinaryData",
+                                                                                       "name":  "file",
+                                                                                       "inputDataFieldName":  "data"
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       1104,
+                                       208
+                                   ],
+                      "id":  "a784b503-b160-4827-bd58-0fd9ac77571d",
+                      "name":  "HTTP | OpenAI upload arquivo"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const base = $node[\"Preparar mídia para análise IA\"].json;\nconst upload = $node[\"HTTP | OpenAI upload arquivo\"].json;\n\n// Nome correto do seu node de download\nconst downloadItems = $items(\"HTTP | Baixar mídia Whapi\");\n\nif (!downloadItems?.[0]?.binary?.data) {\n  throw new Error(\u0027Binary data não encontrado no node HTTP | Baixar mídia Whapi\u0027);\n}\n\nconst originalBinary = {\n  data: downloadItems[0].binary.data\n};\n\nlet parsed = null;\n\ntry {\n  const text = $json.output?.[0]?.content?.[0]?.text;\n\n  if (typeof text === \u0027object\u0027 \u0026\u0026 text !== null) {\n    parsed = text;\n  } else if (typeof text === \u0027string\u0027) {\n    parsed = JSON.parse(text);\n  }\n} catch (error) {\n  parsed = null;\n}\n\nif (!parsed) {\n  parsed = {\n    classificacao_ia: \u0027INCONCLUSIVO\u0027,\n    tipo_documento: \u0027desconhecido\u0027,\n    valor_extraido_centavos: null,\n    data_extraida: null,\n    autenticacao: null,\n    favorecido: null,\n    pagador: null,\n    confianca: \u0027baixa\u0027,\n    observacoes: \u0027Falha ao normalizar análise da IA.\u0027\n  };\n}\n\nconst classificacao = String(parsed.classificacao_ia ?? \u0027INCONCLUSIVO\u0027).toUpperCase();\n\nreturn {\n  json: {\n    ...base,\n\n    openai_file: {\n      id: upload.id,\n      object: upload.object,\n      filename: upload.filename,\n      purpose: upload.purpose,\n      bytes: upload.bytes,\n      status: upload.status\n    },\n\n    comprovante_ia: {\n      classificacao_ia: [\u0027COMPROVANTE_PROVAVEL\u0027, \u0027NAO_COMPROVANTE\u0027, \u0027INCONCLUSIVO\u0027].includes(classificacao)\n        ? classificacao\n        : \u0027INCONCLUSIVO\u0027,\n\n      tipo_documento: parsed.tipo_documento ?? \u0027desconhecido\u0027,\n      valor_extraido_centavos: parsed.valor_extraido_centavos ?? null,\n      data_extraida: parsed.data_extraida ?? null,\n      autenticacao: parsed.autenticacao ?? null,\n      favorecido: parsed.favorecido ?? null,\n      pagador: parsed.pagador ?? null,\n      confianca: parsed.confianca ?? \u0027baixa\u0027,\n      observacoes: parsed.observacoes ?? \u0027\u0027\n    },\n\n    openai_response_raw: $json\n  },\n  binary: originalBinary\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1552,
+                                       208
+                                   ],
+                      "id":  "1270bd9f-3dbc-462c-adc4-7ca671a8a406",
+                      "name":  "Normalizar análise comprovante"
+                  },
+                  {
+                      "parameters":  {
+                                         "inputDataFieldName":  "=data",
+                                         "name":  "={{\n  [\n    \u0027comprovante\u0027,\n    $json.contato.whatsapp_norm,\n    $json.whapi.message_id,\n    $json.arquivo.file_name\n  ].join(\u0027_\u0027).replace(/[^\\w.\\-]+/g, \u0027_\u0027)\n}}",
+                                         "driveId":  {
+                                                         "__rl":  true,
+                                                         "value":  "My Drive",
+                                                         "mode":  "list",
+                                                         "cachedResultName":  "My Drive",
+                                                         "cachedResultUrl":  "https://drive.google.com/drive/my-drive"
+                                                     },
+                                         "folderId":  {
+                                                          "__rl":  true,
+                                                          "value":  "={{ $env.GOOGLE_DRIVE_COMPROVANTES_FOLDER_ID }}",
+                                                          "mode":  "id"
+                                                      },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "a2c22e04-a3cf-4ab5-8438-0757e29064bd",
+                      "name":  "Google Drive | Upload comprovante",
+                      "type":  "n8n-nodes-base.googleDrive",
+                      "typeVersion":  3,
+                      "position":  [
+                                       1792,
+                                       208
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cobranca_registrar_comprovante",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=representation"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  (() =\u003e {\n    const base = $node[\"Normalizar análise comprovante\"].json;\n    const drive = $json;\n    const ia = base.comprovante_ia || {};\n\n    return {\n      p_cliente_contato_id: base.contato.cliente_contato_id,\n      p_pendencia_id: null,\n\n      p_tipo_arquivo: base.arquivo.mime_type,\n      p_arquivo_url: drive.webViewLink || drive.webContentLink || null,\n      p_drive_file_id: drive.id,\n\n      p_valor_extraido_centavos: ia.valor_extraido_centavos ?? null,\n      p_data_extraida: ia.data_extraida ?? null,\n      p_autenticacao: ia.autenticacao ?? null,\n      p_classificacao_ia: ia.classificacao_ia ?? \u0027INCONCLUSIVO\u0027,\n\n      p_observacoes: [\n        ia.observacoes || \u0027\u0027,\n        ia.tipo_documento ? `Tipo: ${ia.tipo_documento}` : \u0027\u0027,\n        ia.confianca ? `Confiança IA: ${ia.confianca}` : \u0027\u0027,\n        ia.favorecido ? `Favorecido: ${ia.favorecido}` : \u0027\u0027,\n        ia.pagador ? `Pagador: ${ia.pagador}` : \u0027\u0027\n      ].filter(Boolean).join(\u0027\\n\u0027),\n\n      p_whatsapp_message_id: base.whapi.message_id,\n      p_raw_payload: {\n        whapi: base.whapi.raw_payload,\n        arquivo: base.arquivo,\n        drive: {\n          id: drive.id,\n          name: drive.name,\n          webViewLink: drive.webViewLink,\n          webContentLink: drive.webContentLink\n        },\n        comprovante_ia: ia,\n        openai_response_id: base.openai_response_raw?.id ?? null,\n        openai_file_id: base.openai_file?.id ?? null\n      }\n    };\n  })()\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       2048,
+                                       208
+                                   ],
+                      "id":  "d7c4da0a-2c4b-4876-ae41-514f435e1c6f",
+                      "name":  "HTTP RPC | Registrar comprovante"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "DELETE",
+                                         "url":  "=https://api.openai.com/v1/files/{{ $node[\"Normalizar análise comprovante\"].json.openai_file.id }}",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.OPENAI_API_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       2272,
+                                       208
+                                   ],
+                      "id":  "a660a6c1-d7c5-4cbf-a517-e7da7c26ef60",
+                      "name":  "HTTP | OpenAI deletar arquivo temporário"
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "={{ $json.whapi.media.url }}",
+                                         "options":  {
+                                                         "response":  {
+                                                                          "response":  {
+                                                                                           "responseFormat":  "file"
+                                                                                       }
+                                                                      }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       672,
+                                       0
+                                   ],
+                      "id":  "58136aea-74fc-4d1e-9391-bcc2cd9fda03",
+                      "name":  "HTTP | Baixar áudio Whapi"
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "audio",
+                                         "operation":  "transcribe",
+                                         "options":  {
+                                                         "language":  "pt"
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.openAi",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       880,
+                                       0
+                                   ],
+                      "id":  "dd5c7c4f-82f5-45c6-8f38-a3cdf6129d2e",
+                      "name":  "OpenAI | Transcrever áudio"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const base = $node[\"Switch | Tipo mensagem\"].json;\n\nconst textoTranscrito = String(\n  $json.text ??\n  $json.transcription ??\n  $json.output ??\n  \u0027\u0027\n).trim();\n\nif (!textoTranscrito) {\n  throw new Error(\u0027Transcrição de áudio vazia.\u0027);\n}\n\nreturn {\n  json: {\n    ...base,\n\n    processamento: {\n      ...(base.processamento ?? {}),\n      tipo_operacional: \u0027audio\u0027,\n      texto: textoTranscrito,\n      tem_texto: true,\n      transcricao_origem: \u0027openai_audio_transcribe\u0027\n    },\n\n    audio: {\n      transcricao: textoTranscrito,\n      usage: $json.usage ?? null,\n      transcricao_raw: $json\n    }\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1088,
+                                       0
+                                   ],
+                      "id":  "b47b233a-2a0e-4ae6-9ae5-110d49f4234b",
+                      "name":  "Normalizar transcrição áudio"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelId":  {
+                                                         "__rl":  true,
+                                                         "value":  "gpt-4.1-mini",
+                                                         "mode":  "list",
+                                                         "cachedResultName":  "GPT-4.1-MINI"
+                                                     },
+                                         "responses":  {
+                                                           "values":  [
+                                                                          {
+                                                                              "role":  "system",
+                                                                              "content":  "Você é um classificador operacional de respostas de clientes em uma automação de cobrança da {{empresa}}.\n\nAnalise mensagens recebidas por WhatsApp e retorne apenas JSON válido, sem markdown, sem comentários e sem texto fora do JSON.\n\nSua função:\n1. Classificar a intenção da mensagem.\n2. Definir se altera status da cobrança.\n3. Identificar promessa de pagamento com data objetiva quando existir.\n4. Nunca validar pagamento definitivamente.\n5. Nunca inventar comprovante recebido se não houver arquivo/anexo.\n\nCategorias possíveis de classificacao_ia:\n- PAGAMENTO_CONFIRMADO\n- PAGAMENTO_PROMETIDO\n- NEGOCIACAO\n- DIFICULDADE\n- CONTESTACAO\n- DUVIDA\n- SPAM\n- AGRESSIVO\n- OUTRO\n\nCategorias possíveis de categoria:\n- negociacao\n- validacao\n- duvida\n- outro\n\nStatus possíveis de status_cobranca:\n- aguardando_pagamento\n- negociando\n- em_analise\n- SEM_ALTERACAO\n\nRegras:\n1. Mensagem de teste, saudação genérica, emoji, resposta vazia ou sem conteúdo operacional deve ser OUTRO, outro, SEM_ALTERACAO.\n2. Se o cliente disser que vai pagar em data futura, use PAGAMENTO_PROMETIDO, validacao e aguardando_pagamento.\n3. Se disser \"amanhã\", calcule a data com base na data de referência.\n4. Se disser dia da semana, calcule a próxima ocorrência desse dia com base na data de referência.\n5. Se disser \"essa semana\", \"ainda essa semana\" ou similar, use a sexta-feira da semana da data de referência como promessa_pagamento_data.\n6. Se pedir prazo, desconto, parcelamento, segunda via, renegociação ou acordo, use NEGOCIACAO, negociacao e negociando.\n7. Se contestar valor, OS, serviço, produto, compra ou responsável pelo pedido, use CONTESTACAO, duvida e em_analise.\n8. Se indicar dificuldade financeira, use DIFICULDADE, negociacao e negociando.\n9. Se for dúvida simples sem promessa, sem negociação e sem contestação, use DUVIDA, duvida e SEM_ALTERACAO.\n10. Se houver xingamento, ameaça ou linguagem agressiva, use AGRESSIVO, outro e em_analise.\n11. Se houver promessa de pagamento com data identificável, preencha promessa_pagamento_data em YYYY-MM-DD e motivo_pausa como promessa_pagamento.\n12. Se não houver promessa com data identificável, promessa_pagamento_data deve ser null e motivo_pausa deve ser null.\n13. resumo_observacao deve ser curto, objetivo e em português."
+                                                                          },
+                                                                          {
+                                                                              "content":  "=Data/hora de referência no Brasil:\n{{ new Date((($json.whapi?.raw_payload?.messages?.[0]?.timestamp ?? Math.floor(Date.now() / 1000)) * 1000)).toLocaleString(\u0027sv-SE\u0027, { timeZone: \u0027America/Sao_Paulo\u0027 }) }}\n\nCliente:\n{{ $json.contato.contato_nome }}\n\nWhatsApp normalizado:\n{{ $json.contato.whatsapp_norm }}\n\nMensagem recebida por áudio transcrito:\n{{ $json.processamento.texto }}\n\nRetorne exatamente neste formato JSON:\n\n{\n  \"classificacao_ia\": \"PAGAMENTO_CONFIRMADO | PAGAMENTO_PROMETIDO | NEGOCIACAO | DIFICULDADE | CONTESTACAO | DUVIDA | SPAM | AGRESSIVO | OUTRO\",\n  \"categoria\": \"negociacao | validacao | duvida | outro\",\n  \"status_cobranca\": \"aguardando_pagamento | negociando | em_analise | SEM_ALTERACAO\",\n  \"resumo_observacao\": \"resumo curto em português\",\n  \"promessa_pagamento_data\": null,\n  \"motivo_pausa\": null\n}"
+                                                                          }
+                                                                      ]
+                                                       },
+                                         "builtInTools":  {
+
+                                                          },
+                                         "options":  {
+                                                         "textFormat":  {
+                                                                            "textOptions":  {
+                                                                                                "type":  "json_object"
+                                                                                            }
+                                                                        },
+                                                         "temperature":  0
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.openAi",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       1344,
+                                       0
+                                   ],
+                      "id":  "20c72fac-f931-498a-ba00-4bf9a2f7a818",
+                      "name":  "IA | Classificar resposta áudio"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const base = $node[\"Normalizar transcrição áudio\"].json;\n\nlet parsed = null;\n\ntry {\n  const out = $json.output?.[0];\n  const content = out?.content?.[0];\n  const rawText = content?.text;\n\n  if (typeof rawText === \u0027object\u0027 \u0026\u0026 rawText !== null) {\n    parsed = rawText;\n  } else if (typeof rawText === \u0027string\u0027) {\n    parsed = JSON.parse(rawText);\n  }\n} catch (error) {\n  parsed = null;\n}\n\nif (!parsed) {\n  parsed = {\n    classificacao_ia: \u0027OUTRO\u0027,\n    categoria: \u0027outro\u0027,\n    status_cobranca: \u0027SEM_ALTERACAO\u0027,\n    resumo_observacao: \u0027Falha ao normalizar resposta da IA para áudio.\u0027,\n    promessa_pagamento_data: null,\n    motivo_pausa: null,\n    pausado_ate: null\n  };\n}\n\nreturn {\n  json: {\n    ...base,\n    ia: {\n      classificacao_ia: parsed.classificacao_ia ?? \u0027OUTRO\u0027,\n      categoria: parsed.categoria ?? \u0027outro\u0027,\n      status_cobranca: parsed.status_cobranca ?? \u0027SEM_ALTERACAO\u0027,\n      resumo_observacao: parsed.resumo_observacao ?? \u0027\u0027,\n\n      promessa_pagamento_data: parsed.promessa_pagamento_data ?? null,\n      motivo_pausa: parsed.motivo_pausa ?? null,\n      pausado_ate: parsed.pausado_ate ?? null\n    },\n    openai_raw: $json\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1696,
+                                       0
+                                   ],
+                      "id":  "694a03af-419f-4910-b186-4d067c3a2532",
+                      "name":  "Normalizar JSON IA áudio"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cobranca_registrar_resposta_cliente",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=representation"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    p_cliente_contato_id: $json.contato.cliente_contato_id,\n    p_mensagem: $json.processamento.texto,\n    p_classificacao_ia: $json.ia.classificacao_ia,\n    p_categoria: $json.ia.categoria,\n    p_status_cobranca: $json.ia.status_cobranca,\n    p_resumo_observacao: `[Áudio transcrito] ${$json.ia.resumo_observacao}`,\n    p_whatsapp_message_id: $json.whapi.message_id,\n    p_anexo_url: null,\n    p_raw_payload: {\n      whapi: $json.whapi.raw_payload,\n      processamento: $json.processamento,\n      audio: $json.audio,\n      ia: $json.ia\n    }\n  }\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       1952,
+                                       0
+                                   ],
+                      "id":  "064a8d5d-7070-465a-b71f-28ad948be513",
+                      "name":  "HTTP RPC | Registrar resposta áudio"
+                  }
+              ],
+    "connections":  {
+                        "When Executed by Another Workflow":  {
+                                                                  "main":  [
+                                                                               [
+                                                                                   {
+                                                                                       "node":  "Classificar tipo operacional",
+                                                                                       "type":  "main",
+                                                                                       "index":  0
+                                                                                   }
+                                                                               ]
+                                                                           ]
+                                                              },
+                        "Classificar tipo operacional":  {
+                                                             "main":  [
+                                                                          [
+                                                                              {
+                                                                                  "node":  "Switch | Tipo mensagem",
+                                                                                  "type":  "main",
+                                                                                  "index":  0
+                                                                              }
+                                                                          ]
+                                                                      ]
+                                                         },
+                        "Switch | Tipo mensagem":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "IA | Classificar resposta texto",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ],
+                                                                    [
+                                                                        {
+                                                                            "node":  "HTTP | Baixar áudio Whapi",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ],
+                                                                    [
+                                                                        {
+                                                                            "node":  "HTTP | Baixar mídia Whapi",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "IA | Classificar resposta texto":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "Normalizar JSON IA",
+                                                                                     "type":  "main",
+                                                                                     "index":  0
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "Normalizar JSON IA":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "HTTP RPC | Registrar resposta cliente",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "HTTP | Baixar mídia Whapi":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Preparar mídia para análise IA",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Preparar mídia para análise IA":  {
+                                                                 "main":  [
+                                                                              [
+                                                                                  {
+                                                                                      "node":  "HTTP | OpenAI upload arquivo",
+                                                                                      "type":  "main",
+                                                                                      "index":  0
+                                                                                  }
+                                                                              ]
+                                                                          ]
+                                                             },
+                        "HTTP | OpenAI upload arquivo":  {
+                                                             "main":  [
+                                                                          [
+                                                                              {
+                                                                                  "node":  "HTTP | IA analisar comprovante",
+                                                                                  "type":  "main",
+                                                                                  "index":  0
+                                                                              }
+                                                                          ]
+                                                                      ]
+                                                         },
+                        "HTTP | IA analisar comprovante":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Normalizar análise comprovante",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Normalizar análise comprovante":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "Google Drive | Upload comprovante",
+                                                                                     "type":  "main",
+                                                                                     "index":  0
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "Google Drive | Upload comprovante":  {
+                                                                  "main":  [
+                                                                               [
+                                                                                   {
+                                                                                       "node":  "HTTP RPC | Registrar comprovante",
+                                                                                       "type":  "main",
+                                                                                       "index":  0
+                                                                                   }
+                                                                               ]
+                                                                           ]
+                                                              },
+                        "HTTP RPC | Registrar comprovante":  {
+                                                                 "main":  [
+                                                                              [
+                                                                                  {
+                                                                                      "node":  "HTTP | OpenAI deletar arquivo temporário",
+                                                                                      "type":  "main",
+                                                                                      "index":  0
+                                                                                  }
+                                                                              ]
+                                                                          ]
+                                                             },
+                        "HTTP | Baixar áudio Whapi":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "OpenAI | Transcrever áudio",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "OpenAI | Transcrever áudio":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Normalizar transcrição áudio",
+                                                                                 "type":  "main",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Normalizar transcrição áudio":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "IA | Classificar resposta áudio",
+                                                                                     "type":  "main",
+                                                                                     "index":  0
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "IA | Classificar resposta áudio":  {
+                                                                 "main":  [
+                                                                              [
+                                                                                  {
+                                                                                      "node":  "Normalizar JSON IA áudio",
+                                                                                      "type":  "main",
+                                                                                      "index":  0
+                                                                                  }
+                                                                              ]
+                                                                          ]
+                                                             },
+                        "Normalizar JSON IA áudio":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "HTTP RPC | Registrar resposta áudio",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 }
+}
+
+
+
+
+
+
+
+

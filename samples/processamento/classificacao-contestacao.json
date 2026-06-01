@@ -1,0 +1,19 @@
+{
+  "processamento": {
+    "tipo_operacional": "texto",
+    "texto": "Esse valor está errado, essa OS já foi resolvida com o comercial.",
+    "tem_texto": true
+  },
+  "ia": {
+    "classificacao_ia": "CONTESTACAO",
+    "categoria": "negociacao",
+    "status_cobranca": "em_analise",
+    "resumo_observacao": "Cliente contestou o valor e informou que o caso já foi tratado com o comercial.",
+    "promessa_pagamento_data": null,
+    "motivo_pausa": null
+  },
+  "rpc": {
+    "name": "public.n8n_cobranca_registrar_resposta_cliente",
+    "efeito_esperado": "Registrar interação de entrada, mover pendência para análise e notificar equipe."
+  }
+}

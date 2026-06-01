@@ -1,0 +1,11 @@
+{
+  "comprovante_id": "ffffffff-ffff-ffff-ffff-ffffffffff01",
+  "pendencia_id": "cccccccc-cccc-cccc-cccc-cccccccccc02",
+  "acao_humana": "validar",
+  "validado_por": "{{usuario_financeiro}}",
+  "resultado_esperado": {
+    "comprovante_status_validacao": "validado",
+    "pendencia_status_cobranca": "pago",
+    "auditoria": "Registrar quem validou, quando validou e qual pendência foi encerrada."
+  }
+}

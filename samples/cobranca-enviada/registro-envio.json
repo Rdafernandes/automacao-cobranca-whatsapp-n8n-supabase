@@ -1,0 +1,31 @@
+{
+  "workflow": "[COBRANCA] 04_ENVIAR_COBRANCA_CLIENTES",
+  "cliente_id": "11111111-1111-1111-1111-111111111111",
+  "cliente_contato_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
+  "contato_whatsapp_norm": "5511999990001",
+  "cobranca_envio": {
+    "pendencia_ids": [
+      "cccccccc-cccc-cccc-cccc-cccccccccc01",
+      "cccccccc-cccc-cccc-cccc-cccccccccc02"
+    ],
+    "qtd_pendencias": 2,
+    "total_centavos": 123000,
+    "dias_atraso": 31,
+    "tentativas_cobranca": 1,
+    "tom_cobranca": "firme",
+    "mensagem": "Olá, {{contato}}. Tudo bem? Identificamos pendências financeiras em aberto para {{cliente}}."
+  },
+  "whapi_response": {
+    "message": {
+      "id": "wamid.demo.envio.001"
+    }
+  },
+  "rpc": {
+    "name": "public.n8n_cobranca_registrar_envio",
+    "resultado_esperado": {
+      "status_cobranca": "em_cobranca",
+      "tentativas_incrementadas": true,
+      "proximo_contato_em": "próximo dia útil às 11h"
+    }
+  }
+}

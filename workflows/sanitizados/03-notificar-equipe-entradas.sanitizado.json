@@ -1,0 +1,248 @@
+﻿{
+    "name":  "[COBRANCA] 03_NOTIFICAR_EQUIPE_ENTRADAS",
+    "nodes":  [
+                  {
+                      "parameters":  {
+
+                                     },
+                      "type":  "n8n-nodes-base.manualTrigger",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "id":  "05afeb92-5e4d-437d-95a9-5f2238d416ad",
+                      "name":  "When clicking 'Execute workflow'"
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/n8n_cobranca_v_interacoes_pendentes_notificacao",
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "select",
+                                                                                        "value":  "*"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "order",
+                                                                                        "value":  "created_at.asc"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "limit",
+                                                                                        "value":  "10"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Accept",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       240,
+                                       0
+                                   ],
+                      "id":  "6716d40e-d038-4bb3-80f6-1f775f71d195",
+                      "name":  "HTTP GET | Buscar interações pendentes"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "function formatBRL(centavos) {\n  if (centavos === null || centavos === undefined) return \u0027-\u0027;\n\n  return (Number(centavos) / 100).toLocaleString(\u0027pt-BR\u0027, {\n    style: \u0027currency\u0027,\n    currency: \u0027BRL\u0027\n  });\n}\n\nfunction shortText(text, max = 160) {\n  const clean = String(text ?? \u0027\u0027).replace(/\\s+/g, \u0027 \u0027).trim();\n  if (!clean) return \u0027-\u0027;\n  return clean.length \u003e max ? `${clean.slice(0, max - 1)}...` : clean;\n}\n\nconst pendencias = Array.isArray($json.pendencias_abertas_json)\n  ? $json.pendencias_abertas_json\n  : [];\n\nconst comprovantes = Array.isArray($json.comprovantes_json)\n  ? $json.comprovantes_json\n  : [];\n\nconst comp = comprovantes[0] ?? null;\n\nconst linhasPendencias = pendencias.length\n  ? pendencias.map(p =\u003e {\n      const valor = p.valor_atualizado_centavos ?? p.valor_cobrado_centavos;\n      return `- OS ${p.num_os ?? \u0027-\u0027} | ${formatBRL(valor)} | ${p.status_cobranca ?? \u0027-\u0027}`;\n    }).join(\u0027\\n\u0027)\n  : \u0027- Nenhuma OS pendente encontrada.\u0027;\n\nlet mensagem;\n\nif ($json.categoria === \u0027comprovante\u0027 || comp) {\n  const pend = comp\n    ? pendencias.find(p =\u003e p.pendencia_id === comp.pendencia_id) ?? pendencias[0]\n    : pendencias[0];\n\n  const valorPendente = pend\n    ? (pend.valor_atualizado_centavos ?? pend.valor_cobrado_centavos)\n    : null;\n\n  const valorComprovante = comp?.valor_extraido_centavos ?? null;\n\n  const diferenca = (\n    valorPendente !== null \u0026\u0026\n    valorPendente !== undefined \u0026\u0026\n    valorComprovante !== null \u0026\u0026\n    valorComprovante !== undefined\n  )\n    ? valorComprovante - valorPendente\n    : null;\n\n  const linhaDiferenca =\n    diferenca === null\n      ? \u0027Atenção: Conferir valor manualmente\u0027\n      : diferenca === 0\n        ? \u0027OK: Valor bate com a pendência\u0027\n        : `Atenção: Diferença ${formatBRL(diferenca)}`;\n\n  mensagem = [\n    \u0027[Comprovante recebido] *Comprovante recebido*\u0027,\n    \u0027\u0027,\n    `*Cliente:* ${$json.cliente_nome_fantasia ?? $json.cliente_razao_social ?? \u0027-\u0027}`,\n    `*Contato:* ${$json.contato_nome ?? \u0027-\u0027}`,\n    \u0027\u0027,\n    `*OS:* ${pend?.num_os ?? \u0027-\u0027}`,\n    `*Pendente:* ${formatBRL(valorPendente)}`,\n    `*Comprovante:* ${formatBRL(valorComprovante)}`,\n    linhaDiferenca,\n    \u0027\u0027,\n    `*Arquivo:* ${comp?.arquivo_url ?? $json.anexo_url ?? \u0027-\u0027}`\n  ].join(\u0027\\n\u0027);\n\n} else {\n  mensagem = [\n    \u0027[Resposta cobrança] *Resposta cobrança*\u0027,\n    \u0027\u0027,\n    `*Cliente:* ${$json.cliente_nome_fantasia ?? $json.cliente_razao_social ?? \u0027-\u0027}`,\n    `*Contato:* ${$json.contato_nome ?? \u0027-\u0027}`,\n    `*Msg:* ${shortText($json.mensagem, 160)}`,\n    \u0027\u0027,\n    \u0027*Pendências:*\u0027,\n    linhasPendencias\n  ].join(\u0027\\n\u0027);\n}\n\nreturn {\n  json: {\n    ...$json,\n    notificacao: {\n      mensagem,\n      interacao_ids: [$json.interacao_id]\n    }\n  }\n};"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       480,
+                                       0
+                                   ],
+                      "id":  "903c3ecb-3bc1-46a3-9537-1746f1ebc755",
+                      "name":  "Montar mensagem equipe"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://gate.whapi.cloud/messages/text",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.WHAPI_TOKEN }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    to: $env.WHAPI_INTERNAL_GROUP_ID,\n    body: $json.notificacao.mensagem\n  }\n}}",
+                                         "options":  {
+                                                         "response":  {
+                                                                          "response":  {
+                                                                                           "responseFormat":  "json"
+                                                                                       }
+                                                                      }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       720,
+                                       0
+                                   ],
+                      "id":  "ed6c0146-a94a-4327-a152-7ff8b44d8c66",
+                      "name":  "HTTP | Enviar WhatsApp equipe",
+                      "alwaysOutputData":  false
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cobranca_marcar_interacoes_notificadas",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=representation"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{\n  {\n    p_interacao_ids: $node[\"Montar mensagem equipe\"].json.notificacao.interacao_ids\n  }\n}}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       976,
+                                       0
+                                   ],
+                      "id":  "4d4c3ace-8ceb-41ab-bca8-415033f4c288",
+                      "name":  "HTTP RPC | Marcar interações notificadas"
+                  },
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "*/5 9-18 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.3,
+                      "position":  [
+                                       0,
+                                       -176
+                                   ],
+                      "id":  "590ab6a1-7b23-4745-a03b-9d6198271ec2",
+                      "name":  "Schedule Trigger"
+                  }
+              ],
+    "connections":  {
+                        "When clicking 'Execute workflow'":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "HTTP GET | Buscar interações pendentes",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                        "HTTP GET | Buscar interações pendentes":  {
+                                                                         "main":  [
+                                                                                      [
+                                                                                          {
+                                                                                              "node":  "Montar mensagem equipe",
+                                                                                              "type":  "main",
+                                                                                              "index":  0
+                                                                                          }
+                                                                                      ]
+                                                                                  ]
+                                                                     },
+                        "Montar mensagem equipe":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "HTTP | Enviar WhatsApp equipe",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "HTTP | Enviar WhatsApp equipe":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "HTTP RPC | Marcar interações notificadas",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "Schedule Trigger":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "HTTP GET | Buscar interações pendentes",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 }
+}
+
+
+
+
+
