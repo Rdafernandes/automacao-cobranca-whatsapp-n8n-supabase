@@ -1,0 +1,36 @@
+# Local/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# n8n local/runtime data
+.n8n/
+n8n/
+credentials*.json
+*.credentials.json
+
+# Temporary exports and raw/private artifacts
+tmp/
+temp/
+private/
+raw/
+exports-originais/
+workflows/originais/
+MANUAL_AUTOMACAO_COBRANCA_WHATSAPP_*_TECNICO.md
+[COBRANCA] 01_GATEWAY_WHAPI.json
+[COBRANCA] 02_PROCESSAR_MENSAGEM.json
+[COBRANCA] 03_NOTIFICAR_EQUIPE_ENTRADAS.json
+[COBRANCA] 04_ENVIAR_COBRANCA_CLIENTES.json
+
+# Logs
+*.log
+logs/
