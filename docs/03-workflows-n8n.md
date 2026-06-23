@@ -187,6 +187,17 @@ Schedule público:
 ```text
 */30 11-17 * * 1-5
 ```
+## Estratégia de orquestração
+
+Os workflows se comunicam por persistência e eventos intermediários.
+
+Princípios adotados:
+
+- desacoplamento entre entrada e execução;
+- reprocessamento independente;
+- separação entre captura e decisão;
+- rastreabilidade por banco;
+- recuperação de falhas sem reprocessamento completo.
 
 ## Variáveis De Ambiente Esperadas
 
