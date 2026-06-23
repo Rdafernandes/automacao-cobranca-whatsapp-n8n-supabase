@@ -21,7 +21,7 @@ Este projeto demonstra experiência prática em:
 - Orquestração de automações em múltiplos workflows
 - Construção de soluções orientadas a eventos
 - Modelagem de estado operacional em banco relacional
-- Integração entre sistemas utilizando APIs e webhooks
+- Integração entre sistemas utilizando APIs, webhooks e persistência operacional
 - Uso controlado de IA em processos financeiros
 - Transcrição e classificação automática de mensagens
 - Processamento de anexos e comprovantes
@@ -167,7 +167,7 @@ Documentação: [`docs/11-workflow-04-enviar-cobranca-clientes.md`](docs/11-work
 - **n8n** - orquestração dos workflows.
 - **Supabase** - banco de dados, views, funções e RPCs.
 - **WHAPI** - integração com WhatsApp.
-- **OpenAI** - classificação de respostas, transcrição de áudio e análise auxiliar de comprovantes.
+- **OpenAI** - classificação operacional, transcrição de áudio e apoio na análise de comprovantes.
 - **Google Drive** - armazenamento de comprovantes recebidos.
 - **PostgreSQL/SQL** - modelagem, regras de fila e consultas de auditoria.
 - **JSON** - contratos entre APIs, workflows e simulações.
