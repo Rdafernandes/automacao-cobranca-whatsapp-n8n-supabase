@@ -14,13 +14,28 @@ Na automação original, a base de operação ficava em Google Sheets para facil
 
 Este repositório foca somente na automação, nos workflows n8n e no banco Supabase.
 
+## Competências demonstradas
+
+Este projeto demonstra experiência prática em:
+
+- Orquestração de automações em múltiplos workflows
+- Construção de soluções orientadas a eventos
+- Modelagem de estado operacional em banco relacional
+- Integração entre sistemas utilizando APIs e webhooks
+- Uso controlado de IA em processos financeiros
+- Transcrição e classificação automática de mensagens
+- Processamento de anexos e comprovantes
+- Desenvolvimento de regras transacionais utilizando RPCs
+- Controle de filas operacionais com SQL e views
+- Construção de fluxos auditáveis e rastreáveis
+
 ## Destaques Técnicos
 
 - 4 workflows n8n desacoplados por responsabilidade.
 - Supabase como fonte de verdade para clientes, pendências, histórico e auditoria.
 - Views SQL usadas como filas operacionais de cobrança e notificação.
 - RPCs PostgreSQL para registros transacionais e atualização de estados.
-- IA usada de forma controlada para classificação, transcrição e triagem de comprovantes.
+- IA utilizada apenas em pontos de incerteza operacional (classificação de respostas, transcrição de áudio e apoio na análise de comprovantes).
 - Dados reais removidos, com samples fictícios para simulação pública.
 
 ## Problema
@@ -41,6 +56,37 @@ WhatsApp / WHAPI
     -> Supabase
       -> Operação financeira
 ```
+## Decisões técnicas relevantes
+
+### Banco como fonte de verdade
+
+O Supabase centraliza o estado operacional da cobrança.
+
+O WhatsApp atua apenas como canal de comunicação.
+
+---
+
+### IA como apoio operacional
+
+A IA não toma decisões financeiras.
+
+Seu uso foi limitado para:
+
+- classificação de intenção;
+- transcrição de áudio;
+- apoio na análise de comprovantes.
+
+---
+
+### Persistência antes da ação
+
+Eventos relevantes são registrados antes da distribuição operacional para aumentar rastreabilidade.
+
+---
+
+### Separação por responsabilidade
+
+Cada workflow executa apenas uma responsabilidade principal.
 
 ## Workflows
 
@@ -76,7 +122,7 @@ Documentação: [`docs/11-workflow-04-enviar-cobranca-clientes.md`](docs/11-work
 - Views para filas de cobrança e notificação.
 - RPCs para registros transacionais e auditáveis.
 - Mensagens automáticas determinísticas por template.
-- IA limitada a classificação, extração e transcrição.
+- IA utilizada como camada auxiliar sem autonomia operacional.
 - Controle de janela de envio.
 - Pausa automática por promessa de pagamento.
 - Validação humana antes de marcar pagamento como concluído.
