@@ -1,6 +1,6 @@
 # Workflows n8n
 
-Os workflows foram separados por responsabilidade para reduzir acoplamento, facilitar manutenção e tornar a auditoria mais clara.
+Os workflows foram separados por responsabilidade para reduzir acoplamento, facilitar manutenção e tornar a auditoria mais clara. A comunicação entre workflows ocorre principalmente através da persistência e recuperação de estado no Supabase, reduzindo dependência direta entre execuções.
 
 Os exports públicos ficam em [`../workflows/sanitizados/`](../workflows/sanitizados/).
 
